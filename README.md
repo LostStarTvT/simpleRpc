@@ -112,8 +112,9 @@ public class PersonServiceImpl implements PersonService {
 
 然后服务器通过使用RpcService注解，将这两个类扫描到HashMap容器中作为服务等待客户端调用，如下所示。
 
-```json
-{com.dwj.rpc.test.client.HelloService=com.dwj.rpc.test.server.HelloServiceImpl@51fadaff, com.dwj.rpc.test.client.PersonService=com.dwj.rpc.test.server.PersonServiceImpl@401f7633}
+```shell
+{com.dwj.rpc.test.client.HelloService=com.dwj.rpc.test.server.HelloServiceImpl@51fadaff, 
+ com.dwj.rpc.test.client.PersonService=com.dwj.rpc.test.server.PersonServiceImpl@401f7633}
 ```
 
 以上为server中hashMap中的保存的键值对，即反射调用的映射关系位只需要发送客户端的包名，便能够获取到对应的实例化对象。
