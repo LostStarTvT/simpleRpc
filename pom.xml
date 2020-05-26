@@ -34,6 +34,7 @@
             <version>4.12</version>
             <scope>test</scope>
         </dependency>
+        
         <!--使用spring 测试。-->
         <dependency>
             <groupId>org.springframework</groupId>
@@ -63,6 +64,7 @@
         </dependency>
 
         <!-- Protostuff -->
+        <!--序列化工具-->
         <dependency>
             <groupId>com.dyuproject.protostuff</groupId>
             <artifactId>protostuff-core</artifactId>
@@ -75,6 +77,7 @@
         </dependency>
 
         <!-- Objenesis -->
+        <!--绕过构造器进行new一个对象。-->
         <dependency>
             <groupId>org.objenesis</groupId>
             <artifactId>objenesis</artifactId>
@@ -86,13 +89,6 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.9</version>
         </dependency>
-
-        <dependency>
-            <groupId>com.101tec</groupId>
-            <artifactId>zkclient</artifactId>
-            <version>0.5</version>
-        </dependency>
-
     </dependencies>
 
 </project>

@@ -10,9 +10,7 @@ import org.apache.zookeeper.KeeperException;
 public interface ServiceRegistry {
     /**
      * 注册服务名称与服务地址
-     *
-     * @param serviceName    服务名称
      * @param serviceAddress 服务地址
      */
-    void register(String serviceName, String serviceAddress) throws KeeperException, InterruptedException;
+    void register(String serviceAddress) throws KeeperException, InterruptedException;
 }

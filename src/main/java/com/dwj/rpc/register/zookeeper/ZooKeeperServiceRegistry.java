@@ -33,9 +33,9 @@ public class ZooKeeperServiceRegistry implements ServiceRegistry, Watcher  {
         }
     }
 
-    //  注册持久性registry节点
+    //  注册持久性registry节点 其中只需要serviceAddress 就行，而 service 无序注册。
     @Override
-    public void register(String serviceName, String serviceAddress) throws KeeperException, InterruptedException {
+    public void register(String serviceAddress) throws KeeperException, InterruptedException {
         // 创建 registry 节点（持久）
         String registryPath = Constant.ZK_REGISTRY_PATH;
         LOGGER.debug("create registry node: {}", registryPath);

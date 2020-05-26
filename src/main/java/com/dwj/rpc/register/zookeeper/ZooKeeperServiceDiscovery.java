@@ -3,7 +3,6 @@ package com.dwj.rpc.register.zookeeper;
 import com.dwj.rpc.common.util.CollectionUtil;
 import com.dwj.rpc.register.Constant;
 import com.dwj.rpc.register.ServiceDiscovery;
-import org.I0Itec.zkclient.ZkClient;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -35,7 +34,7 @@ public class ZooKeeperServiceDiscovery implements ServiceDiscovery, Watcher {
     public ZooKeeperServiceDiscovery(String zkAddress) throws IOException {
         // 创建 ZooKeeper 客户端
         zooKeeper = new ZooKeeper(zkAddress, Constant.ZK_CONNECTION_TIMEOUT, this);
-        // 太sb了吧，竟然比着抄都没对，在初始化之前去链接肯定不行啊，卧槽。
+
         try {
 
             latch.await();
@@ -46,9 +45,10 @@ public class ZooKeeperServiceDiscovery implements ServiceDiscovery, Watcher {
         watchNode(zooKeeper);
     }
 
+    // 现阶段的发现仅仅是发现服务器地址，和服务名称是没有关系的。
     @Override
     public String discover() throws IOException {
-
+        //dataList 里面两个地址都是一样的，因为都是相同的东西。。
         int size = dataList.size();
         if (size == 1){
             return dataList.get(0);
@@ -60,6 +60,7 @@ public class ZooKeeperServiceDiscovery implements ServiceDiscovery, Watcher {
 
     private void watchNode(final ZooKeeper zk) {
         try {
+            // 将register下所有的节点进行遍历。
             List<String> nodeList = zk.getChildren(Constant.ZK_REGISTRY_PATH, new Watcher() {
                 @Override
                 public void process(WatchedEvent event) {
@@ -68,6 +69,7 @@ public class ZooKeeperServiceDiscovery implements ServiceDiscovery, Watcher {
                     }
                 }
             });
+            // 然后遍历节点下的值。
             List<String> dataList = new ArrayList<>();
             for (String node : nodeList) {
                 byte[] bytes = zk.getData(Constant.ZK_REGISTRY_PATH + "/" + node, false, null);

@@ -8,13 +8,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cglib.reflect.FastClass;
-import org.springframework.cglib.reflect.FastMethod;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 
 /**
- * Describe:
+ * Describe: rpc服务器的主要处理器。
  *
  * @author Seven on 2020/5/25
  */
@@ -60,13 +59,9 @@ public class RpcServerHandler extends SimpleChannelInboundHandler<RpcRequest> {
         Class<?>[] parameterTypes = request.getParameterTypes();
         Object[] parameters = request.getParameters();
         // 执行反射调用
-//        Method method = serviceClass.getMethod(methodName, parameterTypes);
-//        method.setAccessible(true);
-//        return method.invoke(serviceBean, parameters);
-        // 使用 CGLib 执行反射调用
-        FastClass serviceFastClass = FastClass.create(serviceClass);
-        FastMethod serviceFastMethod = serviceFastClass.getMethod(methodName, parameterTypes);
-        return serviceFastMethod.invoke(serviceBean, parameters);
+        Method method = serviceClass.getMethod(methodName, parameterTypes);
+        method.setAccessible(true);
+        return method.invoke(serviceBean, parameters);
     }
 
     @Override

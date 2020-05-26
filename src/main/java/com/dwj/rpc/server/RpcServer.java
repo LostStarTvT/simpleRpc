@@ -66,7 +66,7 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
         System.out.println(handlerMap);
     }
 
-    //在进行设置好参数以后，会
+    //在进行设置好参数以后，会构建rpc服务器 监听端口。
     @Override
     public void afterPropertiesSet() throws Exception {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
@@ -87,16 +87,18 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
             });
             bootstrap.option(ChannelOption.SO_BACKLOG, 1024);
             bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
+
             // 获取 RPC 服务器的 IP 地址与端口号
             String[] addressArray = StringUtil.split(serviceAddress, ":");
             String ip = addressArray[0];
             int port = Integer.parseInt(addressArray[1]);
             // 启动 RPC 服务器
             ChannelFuture future = bootstrap.bind(ip, port).sync();
-//            // 注册 RPC 服务地址
+
+            // 注册服务到zookeeper服务器
             if (serviceRegistry != null) {
                 for (String interfaceName : handlerMap.keySet()) {
-                    serviceRegistry.register(interfaceName, serviceAddress);
+                    serviceRegistry.register(serviceAddress);
                     LOGGER.debug("register service: {} => {}", interfaceName, serviceAddress);
                 }
             }
