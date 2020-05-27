@@ -19,7 +19,7 @@ docker run --privileged=true -d --name zookeeper --publish 2181:2181  -d zookeep
 firewall-cmd --zone=public --add-port=2181/tcp --permanent
 ```
 
-启动好zookeeper服务器以后就可以直接的测试使用。无序其他的操作。也可以使用idea的插件连接zookeeper进行测试，[Docker安装Zookeeper并进行操作](https://blog.csdn.net/qq_26641781/article/details/80886831)
+zookeeper启动后无需其他的操作便可以直接使用，可以使用idea的插件连接zookeeper进行测试，[Docker安装Zookeeper并进行操作](https://blog.csdn.net/qq_26641781/article/details/80886831)
 
 ### 2.快速开始
 
@@ -96,7 +96,6 @@ public class HelloServiceImpl implements HelloService {
     }
 }
 
-
 @RpcService(PersonService.class)
 public class PersonServiceImpl implements PersonService {
     @Override
@@ -118,6 +117,93 @@ public class PersonServiceImpl implements PersonService {
 ```
 
 以上为server中hashMap中的保存的键值对，即反射调用的映射关系位只需要发送客户端的包名，便能够获取到对应的实例化对象。
+
+客户端的动态代理实现：
+
+```java
+@SuppressWarnings("unchecked")
+public <T> T create(final Class<?> interfaceClass, final String serviceVersion) {
+    // 创建动态代理对象
+    return (T) Proxy.newProxyInstance(
+        interfaceClass.getClassLoader(),
+        new Class<?>[]{interfaceClass},
+        new InvocationHandler() {
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                // 创建 RPC 请求对象并设置请求属性
+                RpcRequest request = new RpcRequest();
+                request.setRequestId(UUID.randomUUID().toString());
+
+                //获取到的接口名称 com.dwj.rpc.test.client.HelloService
+                request.setInterfaceName(method.getDeclaringClass().getName());
+
+                request.setServiceVersion(serviceVersion);
+                request.setMethodName(method.getName());
+                request.setParameterTypes(method.getParameterTypes());
+                request.setParameters(args);
+                // 获取 RPC 服务地址
+                if (serviceDiscovery != null) {
+                    serviceAddress = serviceDiscovery.discover();
+                }
+                //如果不使用zookeeper则需要将这个不进行注解。
+                //serviceAddress = "127.0.0.1:8000";
+                if (StringUtil.isEmpty(serviceAddress)) {
+                    throw new RuntimeException("server address is empty");
+                }
+                // 从 RPC 服务地址中解析主机名与端口号
+                String[] array = StringUtil.split(serviceAddress, ":");
+                String host = array[0];
+                int port = Integer.parseInt(array[1]);
+                // 创建 RPC 客户端对象并发送 RPC 请求
+                // 使用地址和端口进行数据连接，
+                RpcClient client = new RpcClient(host, port);
+
+                long time = System.currentTimeMillis();
+                //但是这个获取到的response总是为空
+                RpcResponse response = client.send(request);
+                LOGGER.debug("time: {}ms", System.currentTimeMillis() - time);
+                if (response == null) {
+                    throw new RuntimeException("response is null");
+                }
+                // 返回RPC响应结果
+                if (response.hasException()) {
+                    throw response.getException();
+                } else {
+                    return response.getResult();
+                }
+            }
+        }
+    );
+}
+```
+
+服务器端使用反射进行调用方法，主要就是进行解析request请求。
+
+```java
+private Object handle(RpcRequest request) throws Exception {
+    // 获取服务对象
+    String serviceName = request.getInterfaceName();
+    String serviceVersion = request.getServiceVersion();
+    if (StringUtil.isNotEmpty(serviceVersion)) {
+        serviceName += "-" + serviceVersion;
+    }
+    //获取 hashMap中的保存的键值对
+    Object serviceBean = handlerMap.get(serviceName);
+    
+    if (serviceBean == null) {
+        throw new RuntimeException(String.format("can not find service bean by key: %s", serviceName));
+    }
+    // 获取反射调用所需的参数
+    Class<?> serviceClass = serviceBean.getClass();
+    String methodName = request.getMethodName();
+    Class<?>[] parameterTypes = request.getParameterTypes();
+    Object[] parameters = request.getParameters();
+    // 执行反射调用
+    Method method = serviceClass.getMethod(methodName, parameterTypes);
+    method.setAccessible(true);
+    return method.invoke(serviceBean, parameters);
+}
+```
 
 ## 三、netty数据连接
 
@@ -438,28 +524,6 @@ public class RpcServerHandler extends SimpleChannelInboundHandler<RpcRequest> {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         LOGGER.error("server caught exception", cause);
         ctx.close();
-    }
-    
-    private Object handle(RpcRequest request) throws Exception {
-        // 获取服务对象
-        String serviceName = request.getInterfaceName();
-        String serviceVersion = request.getServiceVersion();
-        if (StringUtil.isNotEmpty(serviceVersion)) {
-            serviceName += "-" + serviceVersion;
-        }
-        Object serviceBean = handlerMap.get(serviceName);
-        if (serviceBean == null) {
-            throw new RuntimeException(String.format("can not find service bean by key: %s", serviceName));
-        }
-        // 获取反射调用所需的参数
-        Class<?> serviceClass = serviceBean.getClass();
-        String methodName = request.getMethodName();
-        Class<?>[] parameterTypes = request.getParameterTypes();
-        Object[] parameters = request.getParameters();
-        // 执行反射调用
-        Method method = serviceClass.getMethod(methodName, parameterTypes);
-        method.setAccessible(true);
-        return method.invoke(serviceBean, parameters);
     }
 }
 ```
