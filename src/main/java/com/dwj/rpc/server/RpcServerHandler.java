@@ -42,6 +42,7 @@ public class RpcServerHandler extends SimpleChannelInboundHandler<RpcRequest> {
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
 
+    //处理请求。
     private Object handle(RpcRequest request) throws Exception {
         // 获取服务对象
         String serviceName = request.getInterfaceName();

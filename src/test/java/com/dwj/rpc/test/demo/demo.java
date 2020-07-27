@@ -1,9 +1,15 @@
 package com.dwj.rpc.test.demo;
 
+import com.dwj.rpc.register.Constant;
+import com.dwj.rpc.register.zookeeper.ZooKeeperServiceDiscovery;
+import com.dwj.rpc.test.client.HelloService;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -12,7 +18,7 @@ import java.util.concurrent.CountDownLatch;
  * @author Seven on 2020/5/25
  */
 public class demo implements Watcher {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(demo.class);
     private CountDownLatch latch = new CountDownLatch(1);
 
     //连接zookeeper服务器。
@@ -29,16 +35,19 @@ public class demo implements Watcher {
 
     public static void main(String[] args) throws Exception {
         demo demo = new demo();
-        ZooKeeper z = demo.connect("192.168.60.130:2181",2000);
+        ZooKeeper z = demo.connect("192.168.249.128:2181",2000);
         System.out.println("OK"+z);
-        demo.createNode(z,"/javacc","hello");
-//        demo.getData(z,"/javacc");
+        System.out.println(HelloService.class.getName());
+//        demo.createNode(z,"/javacc", HelloService.class.getName());
+        demo.getData(z, Constant.ZK_REGISTRY_PATH + "/" + HelloService.class.getName());
+        System.in.read();
     }
 
     @Override
     public void process(WatchedEvent watchedEvent) {
         if (watchedEvent.getState() == Event.KeeperState.SyncConnected){
             latch.countDown();
+            LOGGER.debug("node data: {}", "子节点变化了");
         }
     }
 
@@ -49,7 +58,7 @@ public class demo implements Watcher {
 
     //查询一个节点。
     public void getData(ZooKeeper zooKeeper,String path) throws KeeperException, InterruptedException {
-        System.out.println(new String(zooKeeper.getData(path,false,new Stat())));
+        System.out.println(new String(zooKeeper.getData(path,true,new Stat())));
     }
 }
 

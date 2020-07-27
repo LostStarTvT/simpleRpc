@@ -19,11 +19,13 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Describe:
+ * Describe: 在Spring声明周期中配置信息。
  *
  * @author Seven on 2020/5/25
  */
@@ -63,6 +65,9 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
                 handlerMap.put(serviceName, serviceBean);
             }
         }
+        // HashMap中保存的数据如下，那么就可以说，直接的取出来。
+        // {com.dwj.rpc.test.client.HelloService=com.dwj.rpc.test.server.HelloServiceImpl@26df6e3a,
+        // com.dwj.rpc.test.client.PersonService=com.dwj.rpc.test.server.PersonServiceImpl@4a3631f8}
         System.out.println(handlerMap);
     }
 
@@ -71,6 +76,7 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
     public void afterPropertiesSet() throws Exception {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
+        System.out.println("ccc");
         try {
             // 创建并初始化 Netty 服务端 Bootstrap 对象
             ServerBootstrap bootstrap = new ServerBootstrap();
@@ -97,10 +103,11 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
 
             // 注册服务到zookeeper服务器
             if (serviceRegistry != null) {
-                for (String interfaceName : handlerMap.keySet()) {
-                    serviceRegistry.register(serviceAddress);
-                    LOGGER.debug("register service: {} => {}", interfaceName, serviceAddress);
-                }
+
+                List<String> interfaceNames = new ArrayList<>(handlerMap.keySet());
+
+                serviceRegistry.register(serviceAddress, interfaceNames);
+//                LOGGER.debug("register service: {} => {}", interfaceName, serviceAddress);
             }
             LOGGER.debug("server started on port {}", port);
             System.out.println("server started on port" + port);

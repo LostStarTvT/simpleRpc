@@ -10,7 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Scanner;
 
 /**
  * Describe: 测试整个框架的有效性，
@@ -27,10 +29,11 @@ public class RPCTest {
      * 测试返回string参数的代理
      */
     @Test
-    public void HelloServiceTest(){
+    public void HelloServiceTest() throws IOException {
         HelloService helloService = rpcProxy.create(HelloService.class);
         String result = helloService.sayHello("World");
         System.out.println(result);
+        System.in.read(); // 按任意键退出 让其监听到服务器节点上的信息。
     }
 
     /**

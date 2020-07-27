@@ -58,8 +58,9 @@ public class RpcProxy {
                         request.setParameterTypes(method.getParameterTypes());
                         request.setParameters(args);
                         // 获取 RPC 服务地址
+                        // 可以做个缓存。 即使用 HashMap也可以。
                         if (serviceDiscovery != null) {
-                            serviceAddress = serviceDiscovery.discover();
+                            serviceAddress = serviceDiscovery.discover(method.getDeclaringClass().getName());
                         }
                         //如果不使用zookeeper则需要将这个不进行注解。
 //                        serviceAddress = "127.0.0.1:8000";
