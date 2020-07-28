@@ -45,13 +45,14 @@ public class ZooKeeperServiceDiscovery implements ServiceDiscovery, Watcher {
         watchNode(zooKeeper);
     }
 
-    // 根据接口的名称发现对应服务器的ip地址和端口。
+    // 根据接口的名称发现对应服务器的ip地址和端口。 每次获取都是从HashMap中获取，避免多次连接。
     @Override
     public String discover(String interfaceName) throws IOException {
         // 直接从数据中进行获取。
         return serviceMap.get(interfaceName);
     }
 
+    // 每次开始的时候会直接的进行连接。获取到所有的数据。
     // 实现监听ZK_REGISTRY_PATH的child节点，当节点进行变化的时候便会回调这个方法，然后进行重新更新HashMap。
     private void watchNode(final ZooKeeper zk) {
         serviceMap.clear(); //每次在进行检测子节点的变化的时候，需要先将Map 更新，然后在进行重新赋值。 所以要使用 ConcurrentHashMap
@@ -75,7 +76,7 @@ public class ZooKeeperServiceDiscovery implements ServiceDiscovery, Watcher {
                 serviceMap.put(node,value);
                 // Map :{com.dwj.rpc.test.client.PersonService : 127.0.0.1:8000}
             }
-            LOGGER.debug("serviceMap date: {}", serviceMap);
+            LOGGER.debug("serviceMap data: {}", serviceMap);
             LOGGER.debug("Service discovery triggered updating connected server node.");
 
         } catch (KeeperException | InterruptedException e) {

@@ -12,7 +12,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Scanner;
 
 /**
  * Describe: 测试整个框架的有效性，
@@ -30,10 +29,11 @@ public class RPCTest {
      */
     @Test
     public void HelloServiceTest() throws IOException {
-        HelloService helloService = rpcProxy.create(HelloService.class);
+        // 也可以通过版本进行控制。 但是二者要一样。
+        HelloService helloService = rpcProxy.create(HelloService.class,"1.0");
         String result = helloService.sayHello("World");
         System.out.println(result);
-        System.in.read(); // 按任意键退出 让其监听到服务器节点上的信息。
+        // System.in.read(); // 按任意键退出 让其监听到服务器节点上的信息。
     }
 
     /**

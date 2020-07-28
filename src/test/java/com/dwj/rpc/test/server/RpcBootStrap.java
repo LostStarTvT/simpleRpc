@@ -15,6 +15,5 @@ public class RpcBootStrap {
     public static void main(String[] args) {
         LOGGER.debug("start server");
         new ClassPathXmlApplicationContext("server-spring.xml");
-        System.out.println("cccc");
     }
 }

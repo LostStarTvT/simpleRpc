@@ -8,7 +8,7 @@ import com.dwj.rpc.test.client.HelloService;
  *
  * @author Seven on 2020/5/25
  */
-@RpcService(HelloService.class)
+@RpcService(value = HelloService.class,version = "1.0")
 public class HelloServiceImpl implements HelloService {
     @Override
     public String sayHello(String name) {

@@ -56,21 +56,15 @@ public class ZooKeeperServiceRegistry implements ServiceRegistry, Watcher  {
     //将服务器的地址保存进去， 在上面创建的/registry 节点下。
     private void createNode(ZooKeeper zk, String serviceAddress, List<String> interfaceName) {
         try {
-            //
+            // 获取serviceAddress的byte，
             byte[] AddressBytes = serviceAddress.getBytes();
             for (String name :interfaceName){
-                //采用的连接模式为 断开连接的时候会自动的删除。 并且索引值为自动增加。
+                //采用的连接模式为 断开连接的时候会自动的删除。
                 // 创建节点并且将地址写进去。
-//                String path = zk.create(Constant.ZK_DATA_PATH, AddressBytes, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
                 String path = zk.create( Constant.ZK_REGISTRY_PATH + "/" + name, AddressBytes, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
                 LOGGER.debug("create zookeeper node ({} => {})", path, serviceAddress);
             }
 
-//            byte[] bytes = serviceAddress.getBytes();
-            //采用的连接模式为 断开连接的时候会自动的删除。 并且索引值为自动增加。
-            // 创建节点并且将地址写进去。
-//            String path = zk.create(Constant.ZK_DATA_PATH, bytes, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-//            LOGGER.debug("create zookeeper node ({} => {})", path, serviceAddress);
         } catch (KeeperException | InterruptedException e) {
             LOGGER.error("", e);
         }

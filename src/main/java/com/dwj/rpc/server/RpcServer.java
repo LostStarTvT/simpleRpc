@@ -59,6 +59,7 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
                 RpcService rpcService = serviceBean.getClass().getAnnotation(RpcService.class);
                 String serviceName = rpcService.value().getName();
                 String serviceVersion = rpcService.version();
+                // 如果版本号不为空则 进行累加。
                 if (StringUtil.isNotEmpty(serviceVersion)) {
                     serviceName += "-" + serviceVersion;
                 }
@@ -103,13 +104,14 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
 
             // 注册服务到zookeeper服务器
             if (serviceRegistry != null) {
-
+                // 获取本地扫描到的所有 注解的接口，放入数组。
                 List<String> interfaceNames = new ArrayList<>(handlerMap.keySet());
 
                 serviceRegistry.register(serviceAddress, interfaceNames);
-//                LOGGER.debug("register service: {} => {}", interfaceName, serviceAddress);
+                LOGGER.debug("register service: {} => {}", interfaceNames.toString(), serviceAddress);
             }
             LOGGER.debug("server started on port {}", port);
+
             System.out.println("server started on port" + port);
             // 关闭 RPC 服务器
             future.channel().closeFuture().sync();
