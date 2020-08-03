@@ -654,43 +654,43 @@ public void process(WatchedEvent watchedEvent) {
 现阶段的注册都是只是单纯的把服务器的ip注册到zookeeper服务器中，并没有指定每一个service对应的服务器ip。具体的实现代码：
 
 ```java
-public class ZooKeeperServiceRegistry implements ServiceRegistry, Watcher  {
+//  注册持久性registry节点 其中只需要serviceAddress 就行，而 service 无序注册。
+// 还需要传递 interfaceName。
+@Override
+public void register(String serviceAddress, List<String> interfaceName) throws KeeperException, InterruptedException {
 
-       //  注册持久性registry节点 其中只需要serviceAddress 就行，而 service 无序注册。
-    // 还需要传递 interfaceName。
-    @Override
-    public void register(String serviceAddress, List<String> interfaceName) throws KeeperException, InterruptedException {
-
-        // 创建 registry 节点（持久）
-        String registryPath = Constant.ZK_REGISTRY_PATH;
-        LOGGER.debug("create registry node: {}", registryPath);
-        // 当没有注册的时候才会进行注册。
-        if (null==zooKeeper.exists(registryPath, false)) {
-            //  new byte[0] 表示该节点只是一个父节点，没有值。
-            zooKeeper.create(registryPath, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+    // 创建 registry 节点（持久）
+    String registryPath = Constant.ZK_REGISTRY_PATH;
+    LOGGER.debug("create registry node: {}", registryPath);
+    // 当没有注册的时候才会进行注册。
+    if (null == zooKeeper.exists(registryPath, false)) {
+        //  new byte[0] 表示该节点只是一个父节点，没有值。
+        zooKeeper.create(registryPath, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+    }
+    // 注册服务节点。
+    for (String name:interfaceName) {
+        // 需要将所有的接口服务发布出去。
+        String InterfacePath = registryPath + "/" + name ;
+        // InterfacePath = registry/com.dwj.rpc.test.client.HelloService-1.0
+        if (null == zooKeeper.exists(InterfacePath,false)){ // 如果没有该节点就进行注册。
+            zooKeeper.create(InterfacePath, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT); //创建持久节点。
+        }
+        // 建立Provider节点， 
+        String providerPath = InterfacePath + Constant.ZK_PROViDE_PATH;
+        // providerPath = registry/com.dwj.rpc.test.client.HelloService-1.0/provider
+        if (null == zooKeeper.exists(providerPath,false)){
+            zooKeeper.create(providerPath, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT); //创建持久节点。
         }
 
-        //创建Server节点  这是个临时节点。
-        createNode(zooKeeper, serviceAddress, interfaceName);
-    }
-
-    //将服务器的地址保存进去， 在上面创建的/registry 节点下。
-    private void createNode(ZooKeeper zk, String serviceAddress, List<String> interfaceName) {
-        try {
-            // 获取serviceAddress的byte，
-            byte[] AddressBytes = serviceAddress.getBytes();
-            for (String name :interfaceName){
-                //采用的连接模式为 断开连接的时候会自动的删除。
-                // 创建节点并且将地址写进去。
-                String path = zk.create( Constant.ZK_REGISTRY_PATH + "/" + name, AddressBytes, 
-                                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-                LOGGER.debug("create zookeeper node ({} => {})", path, serviceAddress);
-            }
-
-        } catch (KeeperException | InterruptedException e) {
-            LOGGER.error("", e);
+        // 此时在进行注册服务器地址，这时候如果有新的服务器提供者运行，那么也会直接的增加新的数据。
+        String addressPath = providerPath + "/" + serviceAddress;
+        // addressPath = registry/com.dwj.rpc.test.client.HelloService-1.0/provider/127.0.0.1:8000;
+        if (null == zooKeeper.exists(addressPath,false)){
+            zooKeeper.create(addressPath, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL); //创建临时节点。
         }
+        LOGGER.debug("create zookeeper node ({} => {})", addressPath, serviceAddress);
     }
+
 }
 ```
 
@@ -702,14 +702,15 @@ public interface Constant {
     int ZK_CONNECTION_TIMEOUT = 1000;
 
     String ZK_REGISTRY_PATH = "/registry";
+    String ZK_PROViDE_PATH = "/provider";
 }
 ```
 
 其中注册的结果如下所示：
 
-![zookeeperResult.png](https://pic.tyzhang.top/images/2020/07/28/zookeeperResult.png)
+![zookeeperRegister.png](https://pic.tyzhang.top/images/2020/08/03/zookeeperRegister.png)
 
-可以看出，其中registry为持久性节点，自动注册的服务名称为接口的全限定类名，因为采用的是`CreateMode.EPHEMERAL`模式。最后节点的值为服务器的地址和端口。
+可以看出，其中registry、服务全限定性类名和provider为持久性节点，provider下会保存所有提供同类服务的服务器节点的ip，采用的是`CreateMode.EPHEMERAL`临时节点模式，提供了地址和端口。
 
 ### 3. 服务发现
 
@@ -719,7 +720,7 @@ public interface Constant {
 public class ZooKeeperServiceDiscovery implements ServiceDiscovery, Watcher {
 
     // 记录缓存，同步HashMap进行存储数据。
-    private final Map<String, String> serviceMap = new ConcurrentHashMap<>();
+    private final Map<String, List<String>> serviceMap = new ConcurrentHashMap<>();
     
     public ZooKeeperServiceDiscovery(String zkAddress) throws IOException {
         // 创建 ZooKeeper 客户端
@@ -737,17 +738,20 @@ public class ZooKeeperServiceDiscovery implements ServiceDiscovery, Watcher {
     // 根据接口的名称发现对应服务器的ip地址和端口。 每次获取都是从HashMap中获取，避免多次连接。
     @Override
     public String discover(String interfaceName) throws IOException {
-        // 直接从数据中进行获取。
-        return serviceMap.get(interfaceName);
+         // 这是一个List，然后重新从中间获取到对应列表进行负载均衡。
+        List<String> result = serviceMap.get(interfaceName); 
+        // 使用负载均衡算法进行实现。 获取单例负载均衡对象。
+        ClusterStrategy clusterStrategy = ClusterStrategyImpl.getUniqueInstance(); //
+        return clusterStrategy.select(result);
     }
 
-    // 每次开始的时候会直接的进行连接。获取到所有的数据。
+  	// 每次开始的时候会直接的进行连接。获取到所有的数据。
     // 实现监听ZK_REGISTRY_PATH的child节点，当节点进行变化的时候便会回调这个方法，然后进行重新更新HashMap。
     private void watchNode(final ZooKeeper zk) {
         serviceMap.clear(); //每次在进行检测子节点的变化的时候，需要先将Map 更新，然后在进行重新赋值。 所以要使用 ConcurrentHashMap
         // 进行数据的同步
         try {
-            // 将register下所有的节点进行遍历。
+            // 将register下所有的节点进行遍历。 当触发event以后 这个便失效，所以需要反复的注册event监视器。
             List<String> nodeList = zk.getChildren(Constant.ZK_REGISTRY_PATH, event -> {
 
                 if (event.getType() == Event.EventType.NodeChildrenChanged) {
@@ -759,11 +763,11 @@ public class ZooKeeperServiceDiscovery implements ServiceDiscovery, Watcher {
             // 然后遍历registry节点下所有的节点。 并且使用HashMap缓存。
             for (String node : nodeList) {
                 // 在获取节点的时候需要使用监听器。
-                byte[] bytes = zk.getData(Constant.ZK_REGISTRY_PATH + "/" + node, true, null);
-                String value = new String(bytes);
+                List<String> serverList = zk.getChildren(Constant.ZK_REGISTRY_PATH + "/" + node + 
+                                                         Constant.ZK_PROViDE_PATH, true, null);
+
                 // 存到HashMap中。
-                serviceMap.put(node,value);
-                // Map :{com.dwj.rpc.test.client.PersonService : 127.0.0.1:8000}
+                serviceMap.put(node,serverList);
             }
             LOGGER.debug("serviceMap data: {}", serviceMap);
             LOGGER.debug("Service discovery triggered updating connected server node.");
@@ -783,5 +787,42 @@ public class ZooKeeperServiceDiscovery implements ServiceDiscovery, Watcher {
 ```
 
 服务发现采取的逻辑是，在刚开始的时候会从zookeeper中获取到所有的节点的列表，然后保存在ConcurrentHashMap中，并且一直监听这个节点的变化，当节点有变化的时候，便会更新ConcurrentHashMap，始终保存最新的服务缓存。
+
+### 4.负载均衡
+
+```java
+public class ClusterStrategyImpl implements ClusterStrategy {
+
+    // 使用volatile
+    private volatile static ClusterStrategyImpl uniqueInstance;
+    private ClusterStrategyImpl() {
+    }
+    public static ClusterStrategy getUniqueInstance() {
+        if (uniqueInstance == null) {
+            synchronized (ClusterStrategyImpl.class) {
+                if (uniqueInstance == null) {
+                    uniqueInstance = new ClusterStrategyImpl();
+                }
+            }
+        }
+        return uniqueInstance;
+    }
+
+
+    @Override
+    public synchronized String  select(List<String> providerIp) {
+        if (providerIp.size() == 1){
+            return providerIp.get(0);
+        }else {
+            int MAX_LEN = providerIp.size();
+            int index = RandomUtils.nextInt(0, MAX_LEN - 1); // 随机选择一个数据进行。
+            return providerIp.get(index);
+        }
+
+    }
+}
+```
+
+使用随机算法从服务器列表中选择一个服务器进行连接，达到负载均衡的目的，另外考虑并发问题，使用单例池加锁进行负载均衡。
 
 以上便完成了整个的监听逻辑的设定。

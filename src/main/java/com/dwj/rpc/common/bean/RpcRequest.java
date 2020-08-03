@@ -1,7 +1,9 @@
 package com.dwj.rpc.common.bean;
 
+import java.io.Serializable;
+
 /**
- * 封装 RPC 请求
+ * 封装 RPC 请求 自定义请求体。  因为没有使用自带的序列化工具，所以不需要实现 Serializable 接口
  *
  */
 public class RpcRequest {

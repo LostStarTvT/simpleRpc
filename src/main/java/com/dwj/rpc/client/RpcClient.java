@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Describe: rpc 代理端的使用。
+ * Describe: 自定义RPC客户端，并且将自己定义的请求体和响应体绑定。
  *
  * @author Seven on 2020/5/25
  */

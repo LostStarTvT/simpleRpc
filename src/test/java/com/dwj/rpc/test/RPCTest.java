@@ -33,7 +33,7 @@ public class RPCTest {
         HelloService helloService = rpcProxy.create(HelloService.class,"1.0");
         String result = helloService.sayHello("World");
         System.out.println(result);
-        // System.in.read(); // 按任意键退出 让其监听到服务器节点上的信息。
+         System.in.read(); // 按任意键退出 让其监听到服务器节点上的信息。
     }
 
     /**

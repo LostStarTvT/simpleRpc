@@ -1,7 +1,7 @@
 package com.dwj.rpc.common.bean;
 
 /**
- * 封装 RPC 响应
+ * 封装 RPC 响应  自定义返回函数，
  */
 public class RpcResponse {
 
