@@ -12,7 +12,6 @@ import java.util.List;
  * @Created by Seven
  */
 public class ClusterStrategyImpl implements ClusterStrategy {
-
     // 使用volatile
     private volatile static ClusterStrategyImpl uniqueInstance;
     private ClusterStrategyImpl() {

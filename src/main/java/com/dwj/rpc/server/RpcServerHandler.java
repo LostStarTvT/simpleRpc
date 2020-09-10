@@ -63,6 +63,7 @@ public class RpcServerHandler extends SimpleChannelInboundHandler<RpcRequest> {
         Method method = serviceClass.getMethod(methodName, parameterTypes);
         method.setAccessible(true);
         return method.invoke(serviceBean, parameters);
+        // 没有处理 如果调用的方法出现异常怎么处理？ 应该是将异常对象封装返回。
     }
 
     @Override

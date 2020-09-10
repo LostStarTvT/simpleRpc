@@ -1,6 +1,6 @@
 ## 一、介绍
 
-基于spring框架实现的一个简单的[RPC框架](https://github.com/LostStarTvT/simpleRpc)，其中使用netty作为网络连接，使用zookeeper作为注册服务器。本项目主要分为三个部分，其一动态代理，其二netty网络通信，其三zookeeper客户端的使用。[参考项目](https://github.com/luxiaoxun/NettyRpc) [黄勇老师教程](https://my.oschina.net/huangyong/blog/361751)
+[RPC框架](https://github.com/LostStarTvT/simpleRpc)，使用netty作为网络连接，使用zookeeper作为注册服务器。本项目主要分为三个部分，其一动态代理，其二netty网络通信，其三zookeeper客户端的使用。[参考项目](https://github.com/luxiaoxun/NettyRpc) [黄勇老师教程](https://my.oschina.net/huangyong/blog/361751)
 
 ### 1.搭建zookeeper环境
 
