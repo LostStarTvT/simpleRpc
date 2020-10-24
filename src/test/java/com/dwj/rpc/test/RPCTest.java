@@ -31,9 +31,11 @@ public class RPCTest {
     public void HelloServiceTest() throws IOException {
         // 也可以通过版本进行控制。 但是二者要一样。
         HelloService helloService = rpcProxy.create(HelloService.class,"1.0");
-        String result = helloService.sayHello("World");
+        // 这时候有异常，那么就需要捕获到。
+        String result = helloService.sayHello("World"); // 事实证明这是阻塞的。
+        System.out.println("ccc");
         System.out.println(result);
-         System.in.read(); // 按任意键退出 让其监听到服务器节点上的信息。
+        System.in.read(); // 按任意键退出 让其监听到服务器节点上的信息。
     }
 
     /**

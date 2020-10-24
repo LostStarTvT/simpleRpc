@@ -12,6 +12,7 @@ import com.dwj.rpc.test.client.HelloService;
 public class HelloServiceImpl implements HelloService {
     @Override
     public String sayHello(String name) {
+//        int i = 1/0; //抛出异常。
         return "Hello " + name;
     }
 }

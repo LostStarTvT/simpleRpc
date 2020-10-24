@@ -32,6 +32,7 @@ public class RpcServerHandler extends SimpleChannelInboundHandler<RpcRequest> {
         RpcResponse response = new RpcResponse();
         response.setRequestId(request.getRequestId());
         try {
+            // 在这里进行捕获异常。如果有异常会将异常返回到前台。
             Object result = handle(request);
             response.setResult(result);
         } catch (Exception e) {
@@ -39,6 +40,7 @@ public class RpcServerHandler extends SimpleChannelInboundHandler<RpcRequest> {
             response.setException(e);
         }
         // 写入 RPC 响应对象并自动关闭连接
+//        response = null; 测试异常，发现是可以捕获到的。
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
 

@@ -37,6 +37,7 @@ public class RpcProxy {
         return create(interfaceClass, "");
     }
 
+    // 通过放射获取。
     @SuppressWarnings("unchecked")
     public <T> T create(final Class<?> interfaceClass, final String serviceVersion) {
         // 创建动态代理对象
@@ -84,8 +85,11 @@ public class RpcProxy {
 
                         long time = System.currentTimeMillis();
                         //但是这个获取到的response总是为空
-                        RpcResponse response = client.send(request);
+                        RpcResponse response = client.initNetty(request);
                         LOGGER.debug("time: {}ms", System.currentTimeMillis() - time);
+
+                        // 这里面如果有异常的话，应该重试，比如说重新选择一个服务器进行连接。
+                        // 这里出现返回为null， 则需要进行重试。如果充实了5次比如说，那么就需要进行抛出异常。
                         if (response == null) {
                             throw new RuntimeException("response is null");
                         }
